@@ -1,0 +1,86 @@
+#!/usr/bin/python
+from __future__ import print_function
+
+import argparse
+import dbus
+import dbus.mainloop.glib
+import glib
+import pynotify
+
+APP_NAME  = 'connman'
+SHORT_DEV = True
+SHOW_ADDR = True
+STATE_MAP = {'disconnect': 'disconnected',
+             'association': 'associating ...',
+             'configuration': 'configuring ...'}
+
+
+def notify(subject, body):
+    ntf = pynotify.Notification(subject, body)
+    ntf.show()
+
+
+def property_changed(bus, manager, name, value, path):
+    # ignore global state changes
+    if path == '/': return
+
+    # shorten device names
+    srv_name = path[path.rfind("/") + 1:]
+    if SHORT_DEV:
+        srv_name = srv_name[0:srv_name.find("_")]
+
+    # interface state changes
+    if name == 'State' and value not in ['ready', 'idle']:
+        state = STATE_MAP.get(value, value)
+        srv_obj = dbus.Interface(bus.get_object('net.connman', path), 'net.connman.Service')
+        srv_prop = None
+        try:
+            srv_prop = srv_obj.GetProperties()
+            if 'Name' in srv_prop:
+                srv_name += "/" + srv_prop['Name']
+            if SHOW_ADDR and value == 'online':
+                addrs = []
+                for proto in ['IPv4', 'IPv6']:
+                    if proto in srv_prop and 'Address' in srv_prop[proto]:
+                        addrs.append("{}: {}".format(proto, str(srv_prop[proto]['Address'])))
+                if addrs:
+                    state += " [" + ", ".join(addrs) + "]"
+        except dbus.DBusException:
+            pass
+        notify(srv_name, state)
+
+    # IPv4/6 changes
+    if SHOW_ADDR and name in ['IPv4', 'IPv6'] and 'Address' in value:
+        srv_obj = dbus.Interface(bus.get_object('net.connman', path), 'net.connman.Service')
+        srv_prop = srv_obj.GetProperties()
+
+        # only report new addresses
+        if srv_prop['State'] == 'online':
+            if 'Name' in srv_prop:
+                srv_name += "/" + srv_prop['Name']
+            notify(srv_name, '{}: {}'.format(name, value['Address']))
+
+
+if __name__ == '__main__':
+    ap = argparse.ArgumentParser(description='connman notification daemon')
+    ap.add_argument('-l', dest="long_dev", action="store_true",
+                    help='Show long interface names')
+    ap.add_argument('-n', dest="hide_addr", action="store_true",
+                    help='Hide assigned IPv4/6 addresses')
+    args = ap.parse_args()
+
+    if args.long_dev: SHORT_DEV = False
+    if args.hide_addr: SHOW_ADDR = False
+
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    pynotify.init(APP_NAME)
+    bus = dbus.SystemBus()
+    manager = dbus.Interface(bus.get_object("net.connman", "/"), "net.connman.Manager")
+
+    bus.add_signal_receiver(lambda name, value, path: property_changed(bus, manager, name, value, path),
+                            bus_name="net.connman",
+                            signal_name="PropertyChanged",
+                            path_keyword="path")
+
+    mainloop = glib.MainLoop()
+    mainloop.run()
