@@ -1,4 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# connman-notify: desktop notification integration for connman
+# Copyright(c) 2014 by wave++ "Yuri D'Elia" <wavexx@thregr.org>
+# Distributed under GPL2 (see COPYING) WITHOUT ANY WARRANTY.
 from __future__ import print_function
 
 import argparse
@@ -10,6 +13,9 @@ import pynotify
 APP_NAME  = 'connman'
 SHORT_DEV = True
 SHOW_ADDR = True
+
+PROTO_LST = ['IPv4', 'IPv6']
+STATE_IGN = ['ready', 'idle']
 STATE_MAP = {'disconnect': 'disconnected',
              'association': 'associating ...',
              'configuration': 'configuring ...'}
@@ -30,7 +36,7 @@ def property_changed(bus, manager, name, value, path):
         srv_name = srv_name[0:srv_name.find("_")]
 
     # interface state changes
-    if name == 'State' and value not in ['ready', 'idle']:
+    if name == 'State' and value not in STATE_IGN:
         state = STATE_MAP.get(value, value)
         srv_obj = dbus.Interface(bus.get_object('net.connman', path), 'net.connman.Service')
         srv_prop = None
@@ -40,7 +46,7 @@ def property_changed(bus, manager, name, value, path):
                 srv_name += "/" + srv_prop['Name']
             if SHOW_ADDR and value == 'online':
                 addrs = []
-                for proto in ['IPv4', 'IPv6']:
+                for proto in PROTO_LST:
                     if proto in srv_prop and 'Address' in srv_prop[proto]:
                         addrs.append("{}: {}".format(proto, str(srv_prop[proto]['Address'])))
                 if addrs:
@@ -50,7 +56,7 @@ def property_changed(bus, manager, name, value, path):
         notify(srv_name, state)
 
     # IPv4/6 changes
-    if SHOW_ADDR and name in ['IPv4', 'IPv6'] and 'Address' in value:
+    if SHOW_ADDR and name in PROTO_LST and 'Address' in value:
         srv_obj = dbus.Interface(bus.get_object('net.connman', path), 'net.connman.Service')
         srv_prop = srv_obj.GetProperties()
 
