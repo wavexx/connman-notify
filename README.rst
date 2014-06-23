@@ -6,10 +6,10 @@ interface connection/disconnection.
 
 The generated notifications look like::
 
-  ethernet: online [IPv4: 10.1.0.5]
+  ethernet: online [10.1.0.5]
   ethernet: disconnected
   wifi/SSID: configuring ...
-  wifi/SSID: online [IPv4: 192.168.0.1]
+  wifi/SSID: online [192.168.0.1]
   ...
 
 
@@ -31,16 +31,19 @@ notification daemon such as dunst_.
 Why connman
 -----------
 
-I'm only interested in DE-agnostic network managers, and `connman` is one of
-the few available along with `WICD`, `netcfg` and `dhcpcd`. If you're looking
-for a zero-configuration manager, just use `WICD`. `connman` is not "user
-friendly" yet.
+If you're interested in desktop-environment agnostic network managers,
+`connman` is one of the few available along with WICD_, netctl_ if you're using
+Arch linux, and dhcpcd_ (yes, `dhcpcd` can be also used as a *simple* network
+manager using `dhcpcd-gtk`).
+
+If you're looking for a zero-configuration solution though, just use WICD_.
+`connman` is not "user friendly" yet.
 
 connman_ however blows `WICD` out of the water in terms of speed. It can bring
-my ethernet link up in 2 seconds (compared to ~10 of `WICD`) and perform an
-ethernet<=>WiFi switch in generally less than 3 seconds (`WICD` would normally
-just fail to reconnect!). Not to mention minimal CPU/memory usage, and good
-support for IPv6.
+an ethernet link up in 2 seconds (compared to ~10s of `WICD`) and perform an
+ethernet<=>WiFi switch in generally less than 3 seconds (`WICD` normally just
+fails to reconnect!). Not to mention minimal CPU/memory usage, built-in DHCP
+client, and good support for IPv6.
 
 `connman` has no graphical management interface yet. connman-ui_ runs in the
 system tray (if you have one), but it's still far away to being complete.
@@ -53,7 +56,7 @@ serves my current purposes nicely.
 Dependencies
 ------------
 
-The following software is currently required for `facedetect`:
+The following software is currently required for `connman-notify`:
 
 - Python
 - Pynotify (``python-notify``)
@@ -74,3 +77,6 @@ Authors and Copyright
 .. _connman-ui: https://github.com/tbursztyka/connman-ui
 .. _dunst: http://www.knopwob.org/dunst/
 .. _connman_dmenu: https://github.com/taylorchu/connman_dmenu
+.. _WICD: https://launchpad.net/wicd
+.. _dhcpcd: http://roy.marples.name/projects/dhcpcd/
+.. _netctl: https://wiki.archlinux.org/index.php/netctl
