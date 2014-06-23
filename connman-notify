@@ -48,7 +48,7 @@ def property_changed(bus, manager, name, value, path):
                 addrs = []
                 for proto in PROTO_LST:
                     if proto in srv_prop and 'Address' in srv_prop[proto]:
-                        addrs.append("{}: {}".format(proto, str(srv_prop[proto]['Address'])))
+                        addrs.append(str(srv_prop[proto]['Address']))
                 if addrs:
                     state += " [" + ", ".join(addrs) + "]"
         except dbus.DBusException:
@@ -64,7 +64,7 @@ def property_changed(bus, manager, name, value, path):
         if srv_prop['State'] == 'online':
             if 'Name' in srv_prop:
                 srv_name += "/" + srv_prop['Name']
-            notify(srv_name, '{}: {}'.format(name, value['Address']))
+            notify(srv_name, str(value['Address']))
 
 
 if __name__ == '__main__':
